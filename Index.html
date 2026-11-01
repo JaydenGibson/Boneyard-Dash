@@ -1,0 +1,737 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Boneyard Dash</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=DM+Mono:wght@400;500&family=Pirata+One&display=swap" rel="stylesheet">
+<style>
+/* Layout: one centred column (max 880px). Title block, then the game stage with touch pad and key hints,
+   then a two-column manual (controls | obstacle field guide) that stacks on phones.
+   Single dark look by choice: the page is a night scene. */
+:root {
+  --ink: #0d0a14;
+  --panel: #171122;
+  --line: #31274a;
+  --bone: #ece4cf;
+  --dim: #a99fbd;
+  --pumpkin: #ff7a1a;
+  --pumpkin-ink: #1c0e00;
+  --pumpkin-wash: #2e1b0e;
+  --spirit: #bff7e4;
+  --font-display: "Pirata One", "Rockwell", Georgia, serif;
+  --font-body: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "DM Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  color-scheme: dark;
+}
+body {
+  background-color: var(--ink);
+  background-image: radial-gradient(900px 420px at 80% -80px, #2b1743 0%, rgba(13, 10, 20, 0) 70%);
+  color: var(--bone);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.55;
+  padding-block: 28px 56px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap { max-width: 880px; margin: 0 auto; display: grid; gap: 32px; min-width: 0; }
+header h1 {
+  font: 400 clamp(46px, 10vw, 78px) / 0.95 var(--font-display);
+  letter-spacing: 0.01em; margin: 0 0 12px; text-wrap: balance;
+}
+header p { margin: 0; color: var(--dim); max-width: 60ch; }
+header p.quick { margin-top: 12px; color: var(--bone); }
+kbd {
+  font-family: var(--font-mono); font-size: 0.85em; color: var(--bone);
+  background: var(--panel); border: 1px solid var(--line); border-bottom-width: 2px;
+  border-radius: 6px; padding: 1px 7px; white-space: nowrap;
+}
+
+/* Stage */
+.stage {
+  position: relative; background: #0a0614; border: 1px solid var(--line);
+  border-radius: 14px; overflow: hidden;
+}
+.stage canvas { display: block; width: 100%; touch-action: none; user-select: none; -webkit-user-select: none; cursor: pointer; }
+.overlay {
+  position: absolute; inset: 0; display: grid; place-content: center; justify-items: center;
+  gap: 10px; padding: 16px; text-align: center; cursor: pointer;
+  background: rgba(8, 5, 14, 0.62);
+}
+.overlay h2 {
+  font: 400 clamp(30px, 6vw, 46px) / 1.05 var(--font-display);
+  margin: 0; text-wrap: balance;
+}
+.overlay p { margin: 0; color: var(--dim); font-size: 15px; max-width: 40ch; }
+.overlay .score { font-family: var(--font-mono); color: var(--bone); font-size: 16px; }
+.overlay .best { color: var(--pumpkin); font-weight: 700; }
+.primary {
+  font: 700 16px var(--font-body); background: var(--pumpkin); color: var(--pumpkin-ink);
+  border: 0; border-radius: 10px; padding: 12px 24px; cursor: pointer; margin-top: 6px;
+}
+.primary:focus-visible, .padbtn:focus-visible, .toolbtn:focus-visible { outline: 3px solid var(--bone); outline-offset: 3px; }
+
+/* Touch pad and tools */
+.pad { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+.padbtn {
+  height: 60px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel);
+  color: var(--bone); font: 700 17px var(--font-body); cursor: pointer;
+  touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+}
+.padbtn[data-on="true"] { border-color: var(--pumpkin); background: var(--pumpkin-wash); }
+.tools {
+  display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center;
+  justify-content: space-between; margin-top: 12px; color: var(--dim); font-size: 14px;
+}
+.tools .hints { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; min-width: 0; }
+.tools .btns { display: flex; gap: 8px; }
+.toolbtn {
+  background: transparent; border: 1px solid var(--line); color: var(--bone);
+  border-radius: 8px; padding: 6px 12px; font: inherit; cursor: pointer;
+}
+
+/* Manual */
+.manual { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 36px; }
+.manual h2 { font: 400 32px / 1.1 var(--font-display); margin: 0 0 10px; }
+.manual p { margin: 0 0 14px; color: var(--dim); max-width: 60ch; }
+.keys { margin: 0 0 18px; display: grid; gap: 0; }
+.keys .row { display: grid; grid-template-columns: 74px minmax(0, 1fr); gap: 4px 12px; padding: 10px 0; border-top: 1px solid var(--line); }
+.keys .row:last-child { border-bottom: 1px solid var(--line); }
+.keys dt { font-weight: 700; }
+.keys dd { margin: 0; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; color: var(--dim); font-size: 15px; }
+.tips { margin: 0; padding-left: 18px; color: var(--dim); display: grid; gap: 6px; font-size: 15px; }
+.guide { display: grid; gap: 0; margin: 0; padding: 0; list-style: none; }
+.guide li { display: grid; grid-template-columns: 140px minmax(0, 1fr); gap: 16px; padding: 14px 0; border-top: 1px solid var(--line); align-items: center; }
+.guide li:last-child { border-bottom: 1px solid var(--line); }
+.icon { width: 140px; height: 124px; border-radius: 8px; display: block; max-width: 100%; }
+.guide h3 { margin: 0 0 4px; font-size: 17px; display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; }
+.guide p { margin: 0; font-size: 15px; color: var(--dim); }
+.chip { font: 500 12px var(--font-mono); letter-spacing: 0.06em; text-transform: uppercase; border: 1px solid; border-radius: 999px; padding: 2px 10px; }
+.chip.jump { color: var(--pumpkin); border-color: var(--pumpkin); }
+.chip.duck { color: var(--spirit); border-color: var(--spirit); }
+.chip.run { color: var(--dim); border-color: var(--dim); }
+footer { color: var(--dim); font-size: 14px; }
+
+@media (max-width: 720px) {
+  .manual { grid-template-columns: minmax(0, 1fr); gap: 32px; }
+  .guide li { grid-template-columns: 112px minmax(0, 1fr); gap: 12px; }
+  .icon { width: 112px; height: 99px; }
+}
+</style>
+
+<div id="root"></div>
+<noscript><p style="padding:24px">Boneyard Dash needs JavaScript to run.</p></noscript>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+<script>
+(function () {
+'use strict';
+var useState = React.useState, useEffect = React.useEffect, useRef = React.useRef;
+var h = React.createElement;
+
+/* ---------- constants ---------- */
+var H = 300;            // logical canvas height
+var GY = 250;           // ground line
+var GRAV = 0.62, JUMPV = 12.5;
+var V0 = 5.6, VMAX = 12.5, ACCEL = 0.0016;
+var PERIOD = 1800, TEX = 1200, MIST_P = 1700;
+
+var C = {
+  sky0: '#0a0614', sky1: '#1c0f31', sky2: '#3b1c4c',
+  ground: '#150f20', groundLine: '#8a7ba6', tex: '#33284a',
+  sil: '#120b1d', window: 'rgba(255,176,74,0.9)',
+  moon: '#f3ead0', moonShade: 'rgba(160,148,120,0.35)',
+  bone: '#ece4cf', boneDark: '#b3a98e', ink: '#0d0a14', dim: '#a99fbd',
+  pumpkin: '#ff7a1a',
+  wood: '#7a5530', shirt: '#8a3530', patch: '#c98a2b', straw: '#e0ac45', sack: '#cfae74', hat: '#2a1d45',
+  batBody: '#5a37a0', batWing: '#8c67d6', batEye: '#ff5a5a',
+  ghost: 'rgba(191,247,228,0.92)', spirit: '#bff7e4'
+};
+
+/* ---------- storage ---------- */
+function loadHi() { try { return parseInt(localStorage.getItem('boneyard-dash-hi') || '0', 10) || 0; } catch (e) { return 0; } }
+function saveHi(v) { try { localStorage.setItem('boneyard-dash-hi', String(v)); } catch (e) {} }
+function pad(v) { return String(Math.floor(v)).padStart(5, '0'); }
+
+/* ---------- audio (starts only after a click, tap or key press) ---------- */
+var audio = { ctx: null, muted: false };
+function ensureAudio() {
+  if (!audio.ctx) {
+    var AC = window.AudioContext || window.webkitAudioContext;
+    if (AC) { try { audio.ctx = new AC(); } catch (e) {} }
+  }
+  if (audio.ctx && audio.ctx.state === 'suspended') { try { audio.ctx.resume(); } catch (e) {} }
+}
+function tone(freq, dur, type, vol, endFreq, delay) {
+  if (audio.muted || !audio.ctx) return;
+  try {
+    var t = audio.ctx.currentTime + (delay || 0);
+    var o = audio.ctx.createOscillator(), gn = audio.ctx.createGain();
+    o.type = type;
+    o.frequency.setValueAtTime(freq, t);
+    if (endFreq) o.frequency.exponentialRampToValueAtTime(endFreq, t + dur);
+    gn.gain.setValueAtTime(vol, t);
+    gn.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(gn); gn.connect(audio.ctx.destination);
+    o.start(t); o.stop(t + dur + 0.02);
+  } catch (e) {}
+}
+var sfx = {
+  jump: function () { tone(330, 0.14, 'square', 0.04, 620); },
+  die: function () { tone(300, 0.45, 'sawtooth', 0.06, 50); tone(180, 0.5, 'square', 0.04, 40, 0.05); },
+  milestone: function () { tone(660, 0.1, 'square', 0.04); tone(880, 0.14, 'square', 0.04, undefined, 0.11); }
+};
+
+/* ---------- deterministic scenery ---------- */
+function rng(seed) { var s = seed >>> 0; return function () { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 4294967296; }; }
+var scenery = (function () {
+  var r = rng(11), a = [], x = 30;
+  while (x < PERIOD - 120) {
+    var t = r();
+    a.push({ type: t < 0.4 ? 'tomb' : t < 0.62 ? 'tree' : t < 0.76 ? 'house' : 'cross', x: x, v: r() });
+    x += 100 + r() * 140;
+  }
+  return a;
+})();
+var stars = (function () { var r = rng(5), a = []; for (var i = 0; i < 46; i++) a.push({ x: r(), y: r() * 150, s: r() < 0.2 ? 2 : 1, p: r() * 6.28 }); return a; })();
+var bits = (function () { var r = rng(23), a = []; for (var i = 0; i < 80; i++) a.push({ x: r() * TEX, y: GY + 6 + r() * 40, w: 2 + Math.floor(r() * 6) }); return a; })();
+var mist = [{ x: 0, y: GY - 18, w: 260, hh: 16 }, { x: 420, y: GY - 30, w: 340, hh: 20 }, { x: 900, y: GY - 14, w: 220, hh: 14 }, { x: 1300, y: GY - 26, w: 300, hh: 18 }];
+
+/* ---------- sprites ---------- */
+function drawScenery(ctx, it, x) {
+  var b = GY;
+  ctx.fillStyle = C.sil; ctx.strokeStyle = C.sil;
+  if (it.type === 'tomb') {
+    var w = 24 + it.v * 12, hh = 30 + it.v * 24;
+    ctx.beginPath(); ctx.moveTo(x, b); ctx.lineTo(x, b - hh + w / 2);
+    ctx.arc(x + w / 2, b - hh + w / 2, w / 2, Math.PI, 0); ctx.lineTo(x + w, b); ctx.closePath(); ctx.fill();
+  } else if (it.type === 'cross') {
+    var ch = 44 + it.v * 20;
+    ctx.fillRect(x, b - ch, 5, ch); ctx.fillRect(x - 8, b - ch + 10, 21, 5);
+  } else if (it.type === 'tree') {
+    var ty = b - 60 - it.v * 30;
+    ctx.lineCap = 'round'; ctx.lineWidth = 7;
+    ctx.beginPath(); ctx.moveTo(x, b); ctx.lineTo(x + 3, ty); ctx.stroke();
+    ctx.lineWidth = 3; ctx.beginPath();
+    ctx.moveTo(x + 3, ty); ctx.lineTo(x + 22, ty - 18); ctx.lineTo(x + 34, ty - 16);
+    ctx.moveTo(x + 22, ty - 18); ctx.lineTo(x + 26, ty - 34);
+    ctx.moveTo(x + 3, ty + 14); ctx.lineTo(x - 20, ty - 2); ctx.lineTo(x - 30, ty - 14);
+    ctx.moveTo(x - 20, ty - 2); ctx.lineTo(x - 34, ty + 4);
+    ctx.moveTo(x + 2, ty + 30); ctx.lineTo(x + 18, ty + 20);
+    ctx.stroke();
+  } else {
+    ctx.fillRect(x, b - 58, 72, 58);
+    ctx.beginPath(); ctx.moveTo(x - 6, b - 58); ctx.lineTo(x + 36, b - 92); ctx.lineTo(x + 78, b - 58); ctx.closePath(); ctx.fill();
+    ctx.fillRect(x + 54, b - 96, 14, 40);
+    ctx.beginPath(); ctx.moveTo(x + 51, b - 96); ctx.lineTo(x + 61, b - 112); ctx.lineTo(x + 71, b - 96); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = C.window;
+    ctx.fillRect(x + 14, b - 40, 9, 13); ctx.fillRect(x + 46, b - 40, 9, 13); ctx.fillRect(x + 30, b - 76, 8, 10);
+  }
+}
+
+// yb = y of the feet. Standing hitbox is about 44 wide, 44 tall; ducking is 56 wide, 22 tall.
+function drawSkeleton(ctx, x, yb, o) {
+  var duck = !!o.duck, dead = !!o.dead, air = !!o.air, f = o.frame | 0;
+  var B = C.bone, D = C.boneDark, K = C.ink, P = C.pumpkin;
+  function rect(a, b, w, hh, col) { ctx.fillStyle = col; ctx.fillRect(Math.round(x + a), Math.round(yb + b), w, hh); }
+  function leg(hx, lift, topY, sh, fw) {
+    var sH = sh - lift;
+    rect(hx, topY, 4, sH, B);
+    rect(hx, topY + sH, fw, 4, B);
+  }
+  if (!duck) {
+    var l1 = air ? 5 : (f ? 0 : 8), l2 = air ? 5 : (f ? 8 : 0);
+    leg(9, l1, -18, 14, 8); leg(17, l2, -18, 14, 8);
+    rect(2, -34, 5, 3, B); rect(-3, -31, 5, 3, B); rect(-8, -28, 5, 3, D); rect(-12, -25, 4, 3, D);
+    rect(6, -36, 22, 4, B);
+    rect(10, -32, 3, 12, B); rect(15, -32, 3, 15, B); rect(20, -32, 3, 15, B); rect(25, -32, 3, 11, B);
+    rect(6, -26, 8, 8, D);
+    rect(28, -26, 6, 2, B); rect(33, -25, 2, 3, B);
+    rect(24, -40, 5, 6, B);
+    rect(26, -48, 11, 12, B); rect(35, -46, 10, 8, B); rect(33, -38, 11, 5, B);
+    rect(35, -39, 9, 1, K);
+    rect(30, -44, 5, 5, K); rect(42, -45, 2, 2, K);
+    if (dead) {
+      ctx.strokeStyle = P; ctx.lineWidth = 1.5; ctx.beginPath();
+      ctx.moveTo(x + 30.5, yb - 43.5); ctx.lineTo(x + 34.5, yb - 39.5);
+      ctx.moveTo(x + 34.5, yb - 43.5); ctx.lineTo(x + 30.5, yb - 39.5); ctx.stroke();
+    } else { rect(32, -43, 2, 2, P); }
+  } else {
+    var d1 = f ? 0 : 3, d2 = f ? 3 : 0;
+    leg(8, d1, -10, 6, 7); leg(16, d2, -10, 6, 7);
+    rect(-2, -21, 4, 3, D); rect(-7, -19, 4, 3, D); rect(-12, -17, 4, 3, D); rect(-16, -15, 4, 3, D);
+    rect(2, -22, 34, 4, B);
+    rect(10, -18, 3, 9, B); rect(15, -18, 3, 10, B); rect(20, -18, 3, 10, B); rect(25, -18, 3, 8, B);
+    rect(4, -18, 8, 7, D);
+    rect(36, -28, 11, 12, B); rect(45, -26, 10, 8, B); rect(43, -18, 11, 4, B);
+    rect(45, -19, 9, 1, K);
+    rect(40, -24, 5, 5, K); rect(52, -25, 2, 2, K);
+    rect(42, -23, 2, 2, P);
+  }
+}
+
+// T = total height: 50 (short) or 72 (tall pole). Width 36 (hands add a little more).
+function drawScarecrow(ctx, x, gy, T) {
+  var top = gy - T, cx = x + 18;
+  ctx.fillStyle = C.wood;
+  ctx.fillRect(cx - 2, top + 26, 4, T - 26);
+  ctx.fillRect(x + 1, top + 28, 34, 4);
+  ctx.fillStyle = C.shirt; ctx.fillRect(cx - 8, top + 27, 16, 17);
+  ctx.fillStyle = C.patch; ctx.fillRect(cx - 5, top + 33, 5, 5);
+  ctx.fillStyle = C.straw;
+  ctx.fillRect(x - 4, top + 26, 5, 3); ctx.fillRect(x - 6, top + 29, 6, 2); ctx.fillRect(x - 4, top + 32, 5, 3);
+  ctx.fillRect(x + 35, top + 26, 5, 3); ctx.fillRect(x + 36, top + 29, 6, 2); ctx.fillRect(x + 35, top + 32, 5, 3);
+  ctx.fillRect(cx - 6, top + 44, 3, 5); ctx.fillRect(cx - 1, top + 44, 3, 6); ctx.fillRect(cx + 4, top + 44, 3, 4);
+  ctx.fillStyle = C.sack; ctx.beginPath(); ctx.arc(cx, top + 19, 8, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = C.pumpkin; ctx.fillRect(cx - 5, top + 16, 3, 3); ctx.fillRect(cx + 2, top + 16, 3, 3);
+  ctx.strokeStyle = C.ink; ctx.lineWidth = 1; ctx.beginPath();
+  ctx.moveTo(cx - 4, top + 23); ctx.lineTo(cx + 4, top + 23);
+  for (var i = -3; i <= 3; i += 2) { ctx.moveTo(cx + i, top + 21); ctx.lineTo(cx + i, top + 25); }
+  ctx.stroke();
+  ctx.fillStyle = C.hat; ctx.fillRect(cx - 12, top + 11, 24, 3); ctx.fillRect(cx - 7, top, 14, 12);
+  ctx.fillStyle = C.pumpkin; ctx.fillRect(cx - 7, top + 7, 14, 3);
+}
+
+// 40 x 24 box, (x, y) is the top-left corner
+function drawBat(ctx, x, y, f) {
+  var cx = x + 20, s, k;
+  ctx.fillStyle = C.batWing;
+  for (k = 0; k < 2; k++) {
+    s = k ? 1 : -1;
+    ctx.beginPath(); ctx.moveTo(cx + s * 4, y + 10);
+    if (f === 0) {
+      ctx.lineTo(cx + s * 18, y + 1); ctx.lineTo(cx + s * 20, y + 9); ctx.lineTo(cx + s * 14, y + 8);
+      ctx.lineTo(cx + s * 13, y + 14); ctx.lineTo(cx + s * 8, y + 12); ctx.lineTo(cx + s * 4, y + 16);
+    } else {
+      ctx.lineTo(cx + s * 17, y + 14); ctx.lineTo(cx + s * 20, y + 23); ctx.lineTo(cx + s * 14, y + 19);
+      ctx.lineTo(cx + s * 11, y + 23); ctx.lineTo(cx + s * 7, y + 18); ctx.lineTo(cx + s * 4, y + 17);
+    }
+    ctx.closePath(); ctx.fill();
+  }
+  ctx.fillStyle = C.batBody; ctx.fillRect(cx - 4, y + 6, 8, 12);
+  ctx.beginPath(); ctx.moveTo(cx - 4, y + 6); ctx.lineTo(cx - 3, y + 1); ctx.lineTo(cx - 1, y + 6); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(cx + 4, y + 6); ctx.lineTo(cx + 3, y + 1); ctx.lineTo(cx + 1, y + 6); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = C.batEye; ctx.fillRect(cx - 3, y + 9, 2, 2); ctx.fillRect(cx + 1, y + 9, 2, 2);
+}
+
+// 34 x 40 box, (x, y) is the top-left corner
+function drawGhost(ctx, x, y, t) {
+  var wv = Math.sin(t * 0.2) * 2;
+  ctx.save();
+  ctx.shadowColor = C.spirit; ctx.shadowBlur = 12;
+  ctx.fillStyle = C.ghost;
+  ctx.beginPath(); ctx.moveTo(x + 2, y + 40); ctx.lineTo(x + 2, y + 17);
+  ctx.arc(x + 17, y + 17, 15, Math.PI, 0); ctx.lineTo(x + 32, y + 40);
+  ctx.lineTo(x + 26, y + 34 + wv); ctx.lineTo(x + 20, y + 40); ctx.lineTo(x + 14, y + 34 - wv); ctx.lineTo(x + 8, y + 40);
+  ctx.closePath(); ctx.fill();
+  ctx.restore();
+  ctx.fillStyle = C.ink;
+  ctx.fillRect(x + 10, y + 13, 4, 6); ctx.fillRect(x + 21, y + 13, 4, 6);
+  ctx.fillRect(x + 15, y + 24, 5, 6);
+}
+
+/* ---------- game world ---------- */
+function resetGame(g) {
+  g.status = 'ready'; g.px = 56; g.py = 0; g.vy = 0; g.ducking = false;
+  g.speed = V0; g.dist = 0; g.score = 0; g.newBest = false;
+  g.obs = []; g.gapLeft = 260; g.tick = 0; g.scroll = 0; g.flash = 0; g.deadAt = 0;
+  g.lastKind = ''; g.repeat = 0;
+}
+
+function spawn(g) {
+  var s = g.score, r = Math.random(), kind = 'scare';
+  if (s >= 250 && r > 0.8) kind = 'ghost';
+  else if (s >= 120 && r > 0.55) kind = 'bat';
+  if ((kind === 'bat' || kind === 'ghost') && g.lastKind === kind && g.repeat >= 1) kind = 'scare';
+  g.repeat = kind === g.lastKind ? g.repeat + 1 : 0;
+  g.lastKind = kind;
+  var x = g.W + 30, o, i;
+  if (kind === 'scare') {
+    var tall = s > 150 && Math.random() < 0.35;
+    var n = tall ? (s > 400 && Math.random() < 0.3 ? 2 : 1)
+                 : (s > 500 ? 1 + Math.floor(Math.random() * 3) : 1 + Math.floor(Math.random() * 2));
+    var T = tall ? 72 : 50, boxes = [];
+    for (i = 0; i < n; i++) { var ox = i * 46; boxes.push([ox + 10, 2, 16, 27], [ox + 13, 26, 10, T - 26], [ox + 2, 26, 32, 8]); }
+    o = { kind: kind, x: x, y: GY - T, w: (n - 1) * 46 + 36, T: T, n: n, boxes: boxes, mul: 1 };
+  } else if (kind === 'bat') {
+    var q = Math.random(), y = q < 0.35 ? GY - 30 : q < 0.7 ? GY - 58 : GY - 100;
+    o = { kind: kind, x: x, y: y, w: 40, boxes: [[6, 5, 28, 14]], mul: 1.12, ph: Math.random() * 5 };
+  } else {
+    o = { kind: kind, x: x, y: GY - 76, baseY: GY - 76, w: 34, boxes: [[5, 4, 24, 34]], mul: 0.88, ph: Math.random() * 6 };
+  }
+  g.obs.push(o);
+  g.gapLeft = o.w + g.speed * (34 + Math.random() * 28);
+}
+
+function draw(ctx, g, now) {
+  var W = g.W, i, it, px;
+  var sky = ctx.createLinearGradient(0, 0, 0, GY);
+  sky.addColorStop(0, C.sky0); sky.addColorStop(0.65, C.sky1); sky.addColorStop(1, C.sky2);
+  ctx.fillStyle = sky; ctx.fillRect(0, 0, W, GY);
+
+  for (i = 0; i < stars.length; i++) {
+    var st = stars[i], a = 0.45 + 0.4 * Math.sin(now / 700 + st.p);
+    ctx.fillStyle = 'rgba(236,228,207,' + a.toFixed(2) + ')';
+    ctx.fillRect(Math.round(st.x * W), Math.round(st.y), st.s, st.s);
+  }
+
+  var mx = W * 0.8, my = 70;
+  var glow = ctx.createRadialGradient(mx, my, 10, mx, my, 90);
+  glow.addColorStop(0, 'rgba(243,234,208,0.25)'); glow.addColorStop(1, 'rgba(243,234,208,0)');
+  ctx.fillStyle = glow; ctx.fillRect(mx - 100, my - 100, 200, 200);
+  ctx.fillStyle = C.moon; ctx.beginPath(); ctx.arc(mx, my, 32, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = C.moonShade;
+  [[-10, -8, 7], [12, 6, 9], [-4, 16, 4]].forEach(function (c) { ctx.beginPath(); ctx.arc(mx + c[0], my + c[1], c[2], 0, Math.PI * 2); ctx.fill(); });
+
+  for (i = 0; i < scenery.length; i++) {
+    it = scenery[i];
+    px = (((it.x - g.scroll * 0.25) % PERIOD) + PERIOD) % PERIOD;
+    if (px < W + 90) drawScenery(ctx, it, px);
+    if (px - PERIOD > -110) drawScenery(ctx, it, px - PERIOD);
+  }
+
+  ctx.fillStyle = 'rgba(190,170,230,0.08)';
+  for (i = 0; i < mist.length; i++) {
+    var m = mist[i];
+    px = (((m.x - g.scroll * 0.5 - now * 0.012) % MIST_P) + MIST_P) % MIST_P;
+    [px, px - MIST_P].forEach(function (mxp) {
+      if (mxp < W + 200 && mxp + m.w > -20) { ctx.beginPath(); ctx.ellipse(mxp + m.w / 2, m.y, m.w / 2, m.hh / 2, 0, 0, Math.PI * 2); ctx.fill(); }
+    });
+  }
+
+  ctx.fillStyle = C.ground; ctx.fillRect(0, GY, W, H - GY);
+  ctx.fillStyle = C.groundLine; ctx.fillRect(0, GY, W, 2);
+  ctx.fillStyle = C.tex;
+  for (i = 0; i < bits.length; i++) {
+    var b = bits[i];
+    px = (((b.x - g.scroll) % TEX) + TEX) % TEX;
+    if (px < W) ctx.fillRect(Math.round(px), Math.round(b.y), b.w, 2);
+  }
+
+  for (i = 0; i < g.obs.length; i++) {
+    var o = g.obs[i];
+    if (o.kind === 'scare') { for (var k = 0; k < o.n; k++) drawScarecrow(ctx, o.x + k * 46, GY, o.T); }
+    else if (o.kind === 'bat') drawBat(ctx, o.x, o.y, Math.floor(g.tick / 7 + o.ph) % 2);
+    else drawGhost(ctx, o.x, o.y, g.tick + o.ph * 10);
+  }
+
+  var rx = Math.max(8, 22 - g.py * 0.1);
+  ctx.fillStyle = 'rgba(0,0,0,0.35)';
+  ctx.beginPath(); ctx.ellipse(g.px + (g.ducking ? 28 : 22), GY + 4, rx, 3, 0, 0, Math.PI * 2); ctx.fill();
+  drawSkeleton(ctx, g.px, GY - g.py, {
+    duck: g.ducking, air: g.py > 0, dead: g.status === 'over',
+    frame: g.status === 'playing' ? Math.floor(g.scroll / 26) % 2 : 0
+  });
+
+  ctx.font = '500 15px "DM Mono", ui-monospace, monospace';
+  ctx.textAlign = 'right'; ctx.textBaseline = 'alphabetic';
+  var sc = pad(g.score);
+  ctx.fillStyle = C.bone; ctx.fillText(sc, W - 14, 28);
+  ctx.fillStyle = C.dim; ctx.fillText('HI ' + pad(g.hi), W - 14 - ctx.measureText(sc).width - 16, 28);
+
+  if (g.flash > 0) { ctx.fillStyle = 'rgba(225,215,255,' + g.flash.toFixed(3) + ')'; ctx.fillRect(0, 0, W, H); }
+}
+
+/* ---------- Game component ---------- */
+function Game() {
+  var wrapRef = useRef(null), canvasRef = useRef(null), apiRef = useRef({});
+  var _ui = useState({ status: 'ready', score: 0, hi: loadHi(), best: false }), ui = _ui[0], setUi = _ui[1];
+  var _mu = useState(false), muted = _mu[0], setMuted = _mu[1];
+  var _du = useState(false), duckOn = _du[0], setDuckOn = _du[1];
+
+  useEffect(function () {
+    var canvas = canvasRef.current, wrap = wrapRef.current, ctx = canvas.getContext('2d');
+    var g = { W: 800, dpr: 1, hi: loadHi(), duckHeld: false };
+    resetGame(g);
+    var raf = 0;
+
+    function sync() { setUi({ status: g.status, score: g.score, hi: g.hi, best: g.newBest }); }
+
+    function resize() {
+      var cw = wrap.clientWidth || 800;
+      var W = Math.round(Math.max(480, Math.min(800, cw * 1.2)));
+      var dpr = Math.min(window.devicePixelRatio || 1, 2);
+      g.W = W; g.dpr = dpr;
+      canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
+      canvas.style.aspectRatio = W + ' / ' + H;
+    }
+
+    function die() {
+      g.status = 'over'; g.deadAt = performance.now(); g.flash = 0; g.ducking = false;
+      sfx.die();
+      if (g.score > g.hi) { g.hi = g.score; g.newBest = true; saveHi(g.hi); }
+      sync();
+    }
+
+    function step() {
+      if (g.status !== 'playing') return;
+      g.tick++;
+      g.speed = Math.min(VMAX, g.speed + ACCEL);
+      g.dist += g.speed; g.scroll += g.speed;
+      var sc = Math.floor(g.dist * 0.04);
+      if (sc !== g.score) {
+        g.score = sc;
+        if (sc > 0 && sc % 250 === 0) { g.flash = 0.55; sfx.milestone(); }
+      }
+      if (g.flash > 0) g.flash = Math.max(0, g.flash - 0.025);
+      if (g.py > 0 || g.vy > 0) {
+        g.vy -= GRAV * (g.duckHeld ? 2.4 : 1);
+        g.py += g.vy;
+        if (g.py <= 0) { g.py = 0; g.vy = 0; }
+      }
+      g.ducking = g.py === 0 && g.duckHeld;
+      g.gapLeft -= g.speed;
+      if (g.gapLeft <= 0) spawn(g);
+      var i, j, o;
+      for (i = 0; i < g.obs.length; i++) {
+        o = g.obs[i]; o.x -= g.speed * o.mul;
+        if (o.kind === 'ghost') o.y = o.baseY + Math.sin(g.tick * 0.06 + o.ph) * 3;
+      }
+      g.obs = g.obs.filter(function (q) { return q.x + q.w > -60; });
+      var sk = g.ducking ? { x: g.px + 4, y: GY - 22, w: 48, h: 22 } : { x: g.px + 8, y: GY - 44 - g.py, w: 32, h: 44 };
+      for (i = 0; i < g.obs.length; i++) {
+        o = g.obs[i];
+        if (o.x > sk.x + sk.w + 60 || o.x + o.w < sk.x - 20) continue;
+        for (j = 0; j < o.boxes.length; j++) {
+          var b = o.boxes[j];
+          if (sk.x < o.x + b[0] + b[2] && sk.x + sk.w > o.x + b[0] && sk.y < o.y + b[1] + b[3] && sk.y + sk.h > o.y + b[1]) { die(); return; }
+        }
+      }
+    }
+
+    function start() {
+      var hi = g.hi, W = g.W, dpr = g.dpr, held = g.duckHeld;
+      resetGame(g); g.hi = hi; g.W = W; g.dpr = dpr; g.duckHeld = held;
+      g.status = 'playing';
+      sync();
+    }
+    function jump() {
+      if (g.status !== 'playing' || g.py !== 0) return;
+      g.vy = JUMPV; sfx.jump();
+    }
+    function togglePause() {
+      if (g.status === 'playing') { g.status = 'paused'; sync(); }
+      else if (g.status === 'paused') { g.status = 'playing'; sync(); }
+    }
+    function primary(repeat) {
+      ensureAudio();
+      if (g.status === 'ready') { if (!repeat) start(); }
+      else if (g.status === 'over') { if (!repeat && performance.now() - g.deadAt > 350) start(); }
+      else if (g.status === 'paused') { if (!repeat) togglePause(); }
+      else jump();
+    }
+    function setDuck(on) { g.duckHeld = on; setDuckOn(on); if (on) ensureAudio(); }
+    function toggleMute() { audio.muted = !audio.muted; setMuted(audio.muted); }
+    apiRef.current = { primary: primary, setDuck: setDuck, togglePause: togglePause, toggleMute: toggleMute };
+
+    function onKeyDown(e) {
+      var k = e.key;
+      if (k === ' ' || k === 'ArrowUp' || k === 'w' || k === 'W') { e.preventDefault(); primary(e.repeat); }
+      else if (k === 'Enter') { if (g.status !== 'playing') { e.preventDefault(); primary(e.repeat); } }
+      else if (k === 'ArrowDown' || k === 's' || k === 'S') { e.preventDefault(); setDuck(true); }
+      else if (k === 'p' || k === 'P' || k === 'Escape') { if (!e.repeat) togglePause(); }
+      else if (k === 'm' || k === 'M') { if (!e.repeat) toggleMute(); }
+    }
+    function onKeyUp(e) {
+      var k = e.key;
+      if (k === 'ArrowDown' || k === 's' || k === 'S') setDuck(false);
+    }
+    function autoPause() { if (g.status === 'playing') { g.status = 'paused'; sync(); } }
+    function onVis() { if (document.hidden) autoPause(); }
+
+    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('keyup', onKeyUp);
+    window.addEventListener('blur', autoPause);
+    document.addEventListener('visibilitychange', onVis);
+
+    resize();
+    var ro = null;
+    if (window.ResizeObserver) { ro = new ResizeObserver(resize); ro.observe(wrap); }
+    else window.addEventListener('resize', resize);
+
+    var last = performance.now(), acc = 0, STEP = 1000 / 60;
+    function frame(now) {
+      raf = requestAnimationFrame(frame);
+      var dt = now - last; last = now;
+      if (dt > 100) dt = 100;
+      acc += dt;
+      var n = 0;
+      while (acc >= STEP && n < 5) { step(); acc -= STEP; n++; }
+      if (n === 5) acc = 0;
+      ctx.setTransform(g.dpr, 0, 0, g.dpr, 0, 0);
+      draw(ctx, g, now);
+    }
+    raf = requestAnimationFrame(frame);
+
+    return function () {
+      cancelAnimationFrame(raf);
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('keyup', onKeyUp);
+      window.removeEventListener('blur', autoPause);
+      document.removeEventListener('visibilitychange', onVis);
+      if (ro) ro.disconnect(); else window.removeEventListener('resize', resize);
+    };
+  }, []);
+
+  var api = function () { return apiRef.current; };
+  var overlay = null;
+  if (ui.status === 'ready') {
+    overlay = h('div', { className: 'overlay', onClick: function () { api().primary(false); } },
+      h('h2', null, 'Run through the graveyard'),
+      h('p', null, 'Jump the scarecrows and low bats. Duck under ghosts and head-height bats.'),
+      h('button', { type: 'button', className: 'primary' }, 'Start running'),
+      h('p', null, 'Press Space, or click or tap anywhere')
+    );
+  } else if (ui.status === 'paused') {
+    overlay = h('div', { className: 'overlay', onClick: function () { api().primary(false); } },
+      h('h2', null, 'Paused'),
+      h('button', { type: 'button', className: 'primary' }, 'Resume'),
+      h('p', null, 'Press Space or P to continue')
+    );
+  } else if (ui.status === 'over') {
+    overlay = h('div', { className: 'overlay', onClick: function () { api().primary(false); } },
+      h('h2', null, 'Game over'),
+      h('div', { className: 'score' }, 'Score ' + pad(ui.score) + '  ·  Best ' + pad(ui.hi)),
+      ui.best ? h('div', { className: 'best' }, 'New best score') : null,
+      h('button', { type: 'button', className: 'primary' }, 'Run again'),
+      h('p', null, 'Press Space or Enter')
+    );
+  }
+
+  return h('section', { 'aria-label': 'Game' },
+    h('div', { className: 'stage', ref: wrapRef },
+      h('canvas', {
+        ref: canvasRef, role: 'img',
+        'aria-label': 'Boneyard Dash game screen. A skeleton runs through a graveyard past scarecrows, bats and ghosts.',
+        onPointerDown: function (e) { e.preventDefault(); api().primary(false); },
+        onContextMenu: function (e) { e.preventDefault(); }
+      }),
+      overlay
+    ),
+    h('div', { className: 'pad' },
+      h('button', {
+        type: 'button', className: 'padbtn', 'aria-label': 'Jump',
+        onPointerDown: function (e) { e.preventDefault(); api().primary(false); },
+        onContextMenu: function (e) { e.preventDefault(); }
+      }, 'Jump'),
+      h('button', {
+        type: 'button', className: 'padbtn', 'aria-label': 'Duck (hold)', 'data-on': String(duckOn),
+        onPointerDown: function (e) { e.preventDefault(); api().setDuck(true); },
+        onPointerUp: function () { api().setDuck(false); },
+        onPointerCancel: function () { api().setDuck(false); },
+        onPointerLeave: function () { api().setDuck(false); },
+        onContextMenu: function (e) { e.preventDefault(); }
+      }, 'Duck (hold)')
+    ),
+    h('div', { className: 'tools' },
+      h('div', { className: 'hints' },
+        h('span', null, h('kbd', null, 'Space'), ' or ', h('kbd', null, '↑'), ' jump'),
+        h('span', null, h('kbd', null, '↓'), ' duck'),
+        h('span', null, h('kbd', null, 'P'), ' pause'),
+        h('span', null, h('kbd', null, 'M'), ' sound')
+      ),
+      h('div', { className: 'btns' },
+        h('button', { type: 'button', className: 'toolbtn', onClick: function (e) { e.currentTarget.blur(); api().togglePause(); } }, ui.status === 'paused' ? 'Resume' : 'Pause'),
+        h('button', { type: 'button', className: 'toolbtn', 'aria-pressed': String(!muted), onClick: function (e) { e.currentTarget.blur(); api().toggleMute(); } }, muted ? 'Sound off' : 'Sound on')
+      )
+    )
+  );
+}
+
+/* ---------- Manual ---------- */
+var GUIDE = [
+  { id: 'scare', name: 'Scarecrow', action: 'Jump', cls: 'jump', pose: 'jump', note: 'Stands on the ground. Tall ones and groups of two or three need an early, full jump.' },
+  { id: 'bat-low', name: 'Low bat', action: 'Jump', cls: 'jump', pose: 'jump', note: 'Skims just above the ground, so ducking will not save you.' },
+  { id: 'bat-mid', name: 'Head-height bat', action: 'Duck', cls: 'duck', pose: 'duck', note: 'Hold the duck key until it passes over you.' },
+  { id: 'bat-high', name: 'High bat', action: 'Keep running', cls: 'run', pose: 'stand', note: 'Flies overhead. Only a jump can run you into it.' },
+  { id: 'ghost', name: 'Ghost', action: 'Duck', cls: 'duck', pose: 'duck', note: 'Drifts slowly at head height and bobs. Duck early and wait.' }
+];
+
+function SpriteIcon(props) {
+  var ref = useRef(null), item = props.item;
+  useEffect(function () {
+    var cv = ref.current, ctx = cv.getContext('2d');
+    var dpr = Math.min(window.devicePixelRatio || 1, 2), gy = 110;
+    cv.width = 140 * dpr; cv.height = 124 * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    var sky = ctx.createLinearGradient(0, 0, 0, gy);
+    sky.addColorStop(0, C.sky0); sky.addColorStop(0.7, C.sky1); sky.addColorStop(1, C.sky2);
+    ctx.fillStyle = sky; ctx.fillRect(0, 0, 140, gy);
+    ctx.fillStyle = C.ground; ctx.fillRect(0, gy, 140, 14);
+    ctx.fillStyle = C.groundLine; ctx.fillRect(0, gy, 140, 2);
+    var p = item.pose;
+    drawSkeleton(ctx, 14, gy - (p === 'jump' ? 36 : 0), { duck: p === 'duck', air: p === 'jump', frame: 0 });
+    if (item.id === 'scare') drawScarecrow(ctx, 92, gy, 50);
+    else if (item.id === 'bat-low') drawBat(ctx, 90, gy - 30, 0);
+    else if (item.id === 'bat-mid') drawBat(ctx, 90, gy - 58, 1);
+    else if (item.id === 'bat-high') drawBat(ctx, 90, gy - 100, 0);
+    else drawGhost(ctx, 92, gy - 76, 0);
+  }, []);
+  return h('canvas', { ref: ref, className: 'icon', 'aria-hidden': 'true' });
+}
+
+function Manual() {
+  function keyRow(label, keys, note) {
+    return h('div', { className: 'row', key: label },
+      h('dt', null, label),
+      h('dd', null,
+        keys.map(function (k, i) { return h('kbd', { key: i }, k); }),
+        note ? h('span', null, note) : null
+      )
+    );
+  }
+  return h('section', { className: 'manual', 'aria-label': 'How to play' },
+    h('div', null,
+      h('h2', null, 'How to play'),
+      h('p', null, 'You are a skeleton running through a graveyard at night. Stay alive as long as you can. Your score rises with distance, the pace keeps picking up, and lightning flashes every 250 points.'),
+      h('dl', { className: 'keys' },
+        keyRow('Jump', ['Space', '↑', 'W'], 'or tap the game or the Jump button'),
+        keyRow('Duck', ['↓', 'S'], 'hold it; in the air it drops you faster'),
+        keyRow('Pause', ['P', 'Esc']),
+        keyRow('Sound', ['M']),
+        keyRow('Restart', ['Space', 'Enter'], 'after a game over')
+      ),
+      h('ul', { className: 'tips' },
+        h('li', null, 'Jump early. A jump lasts about two thirds of a second.'),
+        h('li', null, 'If the keys do nothing, click the game once so it can receive them.'),
+        h('li', null, 'On a phone, tap the game or use the Jump and Duck buttons.'),
+        h('li', null, 'Your best score is saved in this browser.')
+      )
+    ),
+    h('div', null,
+      h('h2', null, 'What is out there'),
+      h('p', null, 'Bats appear after a short run and ghosts a little later. Each pose below shows what to do.'),
+      h('ul', { className: 'guide' },
+        GUIDE.map(function (it) {
+          return h('li', { key: it.id },
+            h(SpriteIcon, { item: it }),
+            h('div', null,
+              h('h3', null, it.name, h('span', { className: 'chip ' + it.cls }, it.action)),
+              h('p', null, it.note)
+            )
+          );
+        })
+      )
+    )
+  );
+}
+
+function App() {
+  return h('div', { className: 'wrap' },
+    h('header', null,
+      h('h1', null, 'Boneyard Dash'),
+      h('p', null, 'The offline dinosaur game, rebuilt for Halloween. A skeleton runs, scarecrows stand guard, and bats and ghosts haunt the sky.'),
+      h('p', { className: 'quick' }, 'Jump with ', h('kbd', null, 'Space'), ', duck with ', h('kbd', null, '↓'), '. On a phone, tap.')
+    ),
+    h(Game),
+    h(Manual),
+    h('footer', null, 'Made with React and a single canvas. Runs offline once loaded.')
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(h(App));
+})();
+</script>
+
+</body></html>
